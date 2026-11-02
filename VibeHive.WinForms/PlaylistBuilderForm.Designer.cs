@@ -1,6 +1,6 @@
-﻿namespace VibeHive.Events.WinForms;
+namespace VibeHive.WinForms;
 
-partial class Form1
+partial class PlaylistBuilderForm
 {
     /// <summary>
     ///  Required designer variable.
@@ -31,7 +31,7 @@ partial class Form1
         components = new System.ComponentModel.Container();
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(800, 450);
-        Text = "Form1";
+        Text = "VibeHive - Collaborative Playlist Builder";
     }
 
     #endregion
