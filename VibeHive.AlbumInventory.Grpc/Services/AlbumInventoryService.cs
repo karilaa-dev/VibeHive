@@ -6,7 +6,7 @@ namespace VibeHive.AlbumInventory.Grpc.Services;
 
 public class AlbumInventoryService : global::VibeHive.Inventory.AlbumInventory.AlbumInventoryBase
 {
-    // Shared across service instances, like the Canvas UserAPI and previous BookService.
+    // Shared across service instances. Data is cleared when the server stops.
     private static readonly Dictionary<int, Album> albums = new();
     private static readonly Dictionary<int, string> reservations = new();
     private static readonly Dictionary<int, HashSet<string>> returnedReservations = new();

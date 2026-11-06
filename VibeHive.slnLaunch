@@ -1,0 +1,65 @@
+[
+  {
+    "Name": "Start APIs and GUI",
+    "Projects": [
+      {
+        "Path": "VibeHive.AlbumInventory.Grpc\\VibeHive.AlbumInventory.Grpc.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      },
+      {
+        "Path": "VibeHive.MusicRental.Api\\VibeHive.MusicRental.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      },
+      {
+        "Path": "VibeHive.Playlist.Api\\VibeHive.Playlist.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      },
+      {
+        "Path": "VibeHive.Events.Api\\VibeHive.Events.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      },
+      {
+        "Path": "VibeHive.WinForms\\VibeHive.WinForms.csproj",
+        "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "Start APIs",
+    "Projects": [
+      {
+        "Path": "VibeHive.AlbumInventory.Grpc\\VibeHive.AlbumInventory.Grpc.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      },
+      {
+        "Path": "VibeHive.MusicRental.Api\\VibeHive.MusicRental.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      },
+      {
+        "Path": "VibeHive.Playlist.Api\\VibeHive.Playlist.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      },
+      {
+        "Path": "VibeHive.Events.Api\\VibeHive.Events.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      }
+    ]
+  },
+  {
+    "Name": "Start GUI",
+    "Projects": [
+      {
+        "Path": "VibeHive.WinForms\\VibeHive.WinForms.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

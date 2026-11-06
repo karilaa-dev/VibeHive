@@ -113,7 +113,7 @@ partial class MainForm
         apiStatusLabel.Name = "apiStatusLabel";
         apiStatusLabel.ForeColor = Color.Gray;
         apiStatusLabel.Text = "Music Rental API: Checking...";
-        apiStatusLabel.ToolTipText = $"{ClientSettings.MusicRental} checked every 5 seconds";
+        apiStatusLabel.ToolTipText = "Checked every 5 seconds";
         //
         // inventoryStatusLabel
         //
@@ -121,7 +121,7 @@ partial class MainForm
         inventoryStatusLabel.Margin = new Padding(24, 3, 0, 2);
         inventoryStatusLabel.ForeColor = Color.Gray;
         inventoryStatusLabel.Text = "Album Inventory: Checking...";
-        inventoryStatusLabel.ToolTipText = $"{ClientSettings.AlbumInventory} checked every 5 seconds";
+        inventoryStatusLabel.ToolTipText = "Checked every 5 seconds";
         //
         // apiStatusTimer
         //

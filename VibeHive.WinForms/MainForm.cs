@@ -26,6 +26,11 @@ public partial class MainForm : Form
 
     private async void MainForm_Shown(object? sender, EventArgs e)
     {
+        if (DesignMode)
+            return;
+
+        apiStatusLabel.ToolTipText = $"{ClientSettings.MusicRental} checked every 5 seconds";
+        inventoryStatusLabel.ToolTipText = $"{ClientSettings.AlbumInventory} checked every 5 seconds";
         await CheckApiStatusAsync();
         if (!IsDisposed)
             apiStatusTimer.Start();
