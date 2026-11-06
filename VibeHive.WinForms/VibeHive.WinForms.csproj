@@ -8,4 +8,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Protobuf Include="..\VibeHive.AlbumInventory.Grpc\Protos\album_inventory.proto"
+              Link="Protos\album_inventory.proto" GrpcServices="Client" />
+    <PackageReference Include="Google.Protobuf" Version="3.28.2" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.66.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.67.0" PrivateAssets="all" />
+  </ItemGroup>
 </Project>
