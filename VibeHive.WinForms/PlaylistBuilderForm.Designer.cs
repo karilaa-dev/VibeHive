@@ -10,7 +10,7 @@ partial class PlaylistBuilderForm
     /// <summary>
     ///  Clean up any resources being used.
     /// </summary>
-    /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+    /// <param name="disposing">true if managed resources should be disposed, otherwise, false.</param>
     protected override void Dispose(bool disposing)
     {
         if (disposing && (components != null))
@@ -23,7 +23,7 @@ partial class PlaylistBuilderForm
     #region Windows Form Designer generated code
 
     /// <summary>
-    ///  Required method for Designer support - do not modify
+    ///  Required method for Designer support. Do not modify
     ///  the contents of this method with the code editor.
     /// </summary>
     private void InitializeComponent()
@@ -31,7 +31,7 @@ partial class PlaylistBuilderForm
         components = new System.ComponentModel.Container();
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(800, 450);
-        Text = "VibeHive - Collaborative Playlist Builder";
+        Text = "VibeHive Collaborative Playlist Builder";
     }
 
     #endregion

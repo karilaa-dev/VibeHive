@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option csharp_namespace = "VibeHive.Inventory";
+package vibehive.inventory;
+
+import "google/protobuf/empty.proto";
+
+service AlbumInventory {
+  rpc AddAlbum (Album) returns (Album);
+  rpc GetAlbum (AlbumRequest) returns (Album);
+  rpc UpdateAlbum (Album) returns (Album);
+  rpc DeleteAlbum (AlbumRequest) returns (google.protobuf.Empty);
+  // Streams a finite snapshot. Clients may refresh to see later changes.
+  rpc ListAlbums (ListAlbumsRequest) returns (stream Album);
+  // Rental integration: each reservation uses a unique, stable token.
+  rpc ReserveAlbum (ReservationRequest) returns (Album);
+  rpc ReleaseAlbum (ReservationRequest) returns (Album);
+}
+
+message Album {
+  int32 id = 1;
+  string title = 2;
+  string artist = 3;
+  string genre = 4;
+  int32 year = 5;
+  bool available = 6;
+}
+
+message AlbumRequest { int32 id = 1; }
+message ListAlbumsRequest { bool available_only = 1; }
+message ReservationRequest {
+  int32 album_id = 1;
+  string reservation_id = 2;
+}
