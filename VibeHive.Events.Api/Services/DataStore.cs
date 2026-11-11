@@ -7,7 +7,7 @@ public static class DataStore
     public static List<User> Users { get; } = new()
     {
         new User { Id = 1, Name = "Admin User", Email = "admin@vibehive.com", Password = "Admin@123", Role = "Admin" },
-        new User { Id = 2, Name = "Stage Manager", Email = "manager@vibehive.com", Password = "Manager@123", Role = "Manager" },
+        new User { Id = 2, Name = "Stage Manager", Email = "manager@vibehive.com", Password = "Manager@123", Role = "Event Manager" },
         new User { Id = 3, Name = "Regular User", Email = "user@vibehive.com", Password = "User@123", Role = "User" }
     };
 

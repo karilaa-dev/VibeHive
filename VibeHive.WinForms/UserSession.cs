@@ -9,7 +9,7 @@ public static class UserSession
 
     public static bool IsLoggedIn => !string.IsNullOrEmpty(Token);
     public static bool IsAdmin => Role == "Admin";
-    public static bool CanManageEvents => Role is "Admin" or "EventManager";
+    public static bool CanManageEvents => Role is "Admin" or "Event Manager";
 
     public static void Clear()
     {

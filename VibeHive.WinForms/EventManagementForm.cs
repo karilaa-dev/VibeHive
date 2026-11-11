@@ -28,32 +28,27 @@ public partial class EventManagementForm : Form
 
     private void ApplyRolePermissions()
     {
-        if (UserSession.IsLoggedIn)
+        btnBookTicket.Enabled = UserSession.IsLoggedIn;
+
+        // Dynamically show or hide the Create Event tab page
+        if (UserSession.CanManageEvents)
         {
-            lblSessionStatus.Text = $"Status: Logged in as {UserSession.UserName} [{UserSession.Role}]";
-            btnLogin.Enabled = false;
-            btnLogout.Enabled = true;
-
-            btnBookTicket.Enabled = true;
-            btnSubmitCreateEvent.Enabled = UserSession.CanManageEvents;
-            pnlCreateEvent.Visible = UserSession.CanManageEvents;
-            lblCreateRestricted.Visible = !UserSession.CanManageEvents;
-
-            // Admin can cancel bookings; ordinary users can cancel their own bookings, but for simplicity, we restrict cancellation to admins in this example.
-            btnCancelBooking.Enabled = UserSession.IsAdmin;
+            if (!tabControlMain.TabPages.Contains(tabCreateEvent))
+            {
+                tabControlMain.TabPages.Add(tabCreateEvent);
+            }
+            btnSubmitCreateEvent.Enabled = true;
         }
         else
         {
-            lblSessionStatus.Text = "Status: Not logged in";
-            btnLogin.Enabled = true;
-            btnLogout.Enabled = false;
-
-            btnBookTicket.Enabled = false;
-            btnSubmitCreateEvent.Enabled = false;
-            pnlCreateEvent.Visible = false;
-            lblCreateRestricted.Visible = true;
-            btnCancelBooking.Enabled = false;
+            if (tabControlMain.TabPages.Contains(tabCreateEvent))
+            {
+                tabControlMain.TabPages.Remove(tabCreateEvent);
+            }
         }
+
+        // Cancellation access
+        btnCancelBooking.Enabled = UserSession.IsAdmin;
     }
 
     // --- Tab 1: Auth & Profile ---
