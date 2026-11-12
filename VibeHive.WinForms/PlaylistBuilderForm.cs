@@ -6,9 +6,10 @@ namespace VibeHive.WinForms;
 
 public partial class PlaylistBuilderForm : Form
 {
-    private const string BaseUrl = "https://localhost:7047/";
-
-    private static readonly HttpClient Http = new() { BaseAddress = new Uri(BaseUrl) };
+    private static readonly HttpClient Http = new()
+    {
+        BaseAddress = new Uri(ClientSettings.Playlist)
+    };
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
     // ---- Controls ----
@@ -459,7 +460,7 @@ public partial class PlaylistBuilderForm : Form
         try { await action(); }
         catch (HttpRequestException)
         {
-            SetStatus("Cannot reach the API. Is VibeHive.Playlist.Api running, and is BaseUrl correct?", true);
+            SetStatus("Cannot reach the API. Is VibeHive.Playlist.Api running, and is ClientSettings.Playlist correct?", true);
         }
         catch (TaskCanceledException) { SetStatus("The API request timed out.", true); }
         catch (JsonException) { SetStatus("Unexpected response from the API.", true); }
