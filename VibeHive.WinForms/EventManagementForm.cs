@@ -28,9 +28,23 @@ public partial class EventManagementForm : Form
 
     private void ApplyRolePermissions()
     {
-        btnBookTicket.Enabled = UserSession.IsLoggedIn;
+        bool isLoggedIn = UserSession.IsLoggedIn;
 
-        // Dynamically show or hide the Create Event tab page
+        // Ensure this control name matches the label in EventManagementForm.Designer.cs
+        lblSessionStatus.Text = isLoggedIn
+            ? $"Status: Logged in as {UserSession.UserName} [{UserSession.Role}]"
+            : "Status: Not logged in";
+
+        // Hide the Logout button completely unless logged in
+        btnLogout.Visible = isLoggedIn;
+        btnLogout.Enabled = isLoggedIn;
+        btnLogin.Enabled = !isLoggedIn;
+
+        // Booking and cancellation permissions
+        btnBookTicket.Enabled = isLoggedIn;
+        btnCancelBooking.Enabled = UserSession.IsAdmin;
+
+        // Show or hide the Create Event tab page based on role
         if (UserSession.CanManageEvents)
         {
             if (!tabControlMain.TabPages.Contains(tabCreateEvent))
@@ -46,9 +60,6 @@ public partial class EventManagementForm : Form
                 tabControlMain.TabPages.Remove(tabCreateEvent);
             }
         }
-
-        // Cancellation access
-        btnCancelBooking.Enabled = UserSession.IsAdmin;
     }
 
     // --- Tab 1: Auth & Profile ---
