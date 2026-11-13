@@ -156,6 +156,7 @@ partial class AlbumInventoryForm
         dgvAlbums.Size = new Size(726, 432);
         dgvAlbums.AllowUserToAddRows = false;
         dgvAlbums.AllowUserToDeleteRows = false;
+        dgvAlbums.AllowUserToResizeRows = false;
         dgvAlbums.AutoGenerateColumns = false;
         dgvAlbums.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         dgvAlbums.MultiSelect = false;

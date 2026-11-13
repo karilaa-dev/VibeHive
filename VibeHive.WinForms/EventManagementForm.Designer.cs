@@ -203,6 +203,7 @@ partial class EventManagementForm
 
         this.dgvEvents.AllowUserToAddRows = false;
         this.dgvEvents.AllowUserToDeleteRows = false;
+        this.dgvEvents.AllowUserToResizeRows = false;
         this.dgvEvents.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
         this.dgvEvents.Location = new System.Drawing.Point(12, 12);
         this.dgvEvents.MultiSelect = false;
@@ -292,6 +293,7 @@ partial class EventManagementForm
 
         this.dgvBookings.AllowUserToAddRows = false;
         this.dgvBookings.AllowUserToDeleteRows = false;
+        this.dgvBookings.AllowUserToResizeRows = false;
         this.dgvBookings.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
         this.dgvBookings.Location = new System.Drawing.Point(12, 12);
         this.dgvBookings.MultiSelect = false;
@@ -321,6 +323,7 @@ partial class EventManagementForm
 
         this.dgvPastBookings.AllowUserToAddRows = false;
         this.dgvPastBookings.AllowUserToDeleteRows = false;
+        this.dgvPastBookings.AllowUserToResizeRows = false;
         this.dgvPastBookings.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
         this.dgvPastBookings.Location = new System.Drawing.Point(12, 12);
         this.dgvPastBookings.MultiSelect = false;

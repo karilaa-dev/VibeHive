@@ -196,6 +196,7 @@ public partial class PlaylistBuilderForm : Form
         g.ReadOnly = true;
         g.AllowUserToAddRows = false;
         g.AllowUserToDeleteRows = false;
+        g.AllowUserToResizeRows = false;
         g.MultiSelect = false;
         g.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         g.RowHeadersVisible = false;
