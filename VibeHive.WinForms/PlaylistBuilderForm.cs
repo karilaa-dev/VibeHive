@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using VibeHive.WinForms.Services;
 
 namespace VibeHive.WinForms;
 
@@ -13,7 +15,7 @@ public partial class PlaylistBuilderForm : Form
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
     // ---- Controls ----
-    private readonly NumericUpDown numUser = new() { Minimum = 1, Maximum = 100000, Value = 1, Width = 70 };
+    private readonly Label currentUser = new() { AutoSize = true };
 
     private readonly TextBox txtName = new() { Width = 265 };
     private readonly CheckBox chkCollab = new() { Text = "Collaborative", AutoSize = true };
@@ -28,7 +30,7 @@ public partial class PlaylistBuilderForm : Form
     private readonly NumericUpDown numDuration = new() { Minimum = 0, Maximum = 36000, Value = 180, Width = 70 };
     private readonly Button btnAddSong = new() { Text = "Add song", Width = 100, Height = 26 };
 
-    private readonly NumericUpDown numInvite = new() { Minimum = 1, Maximum = 100000, Value = 2, Width = 70 };
+    private readonly ComboBox cmbInvite = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 190 };
     private readonly Button btnInvite = new() { Text = "Invite", Width = 90, Height = 26 };
     private readonly Label lblMembers = new() { AutoSize = true, Text = "No playlist selected" };
 
@@ -52,17 +54,20 @@ public partial class PlaylistBuilderForm : Form
 
     // ---- State ----
     private PlaylistModel? _detail;     // latest data for the selected playlist
+    private List<RegisteredUser> _users = new();
     private bool _suppress;             // blocks SelectedIndexChanged while we rebind the list
     private bool _busy;                 // stops overlapping timer refreshes
 
     private PlaylistModel? Current => lstPlaylists.SelectedItem as PlaylistModel;
-    private int UserId => (int)numUser.Value;
+    private int UserId => UserSession.UserId;
 
     public PlaylistBuilderForm()
     {
         InitializeComponent();
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", UserSession.Token);
         BuildUi();
         WireEvents();
+        BindInvitations();
     }
 
     // =====================================================================
@@ -73,12 +78,13 @@ public partial class PlaylistBuilderForm : Form
         Text = "VibeHive - Collaborative Playlist Builder";
         ClientSize = new Size(1150, 720);
         MinimumSize = new Size(1000, 640);
+        StartPosition = FormStartPosition.CenterScreen;
 
         // ----- Left column -----
         var gbUser = Group("Current user");
-        gbUser.Controls.Add(Lbl("User ID:", 10, 28));
-        numUser.Location = new Point(75, 24);
-        gbUser.Controls.Add(numUser);
+        currentUser.Location = new Point(10, 28);
+        currentUser.Text = UserSession.DisplayUser(UserId);
+        gbUser.Controls.Add(currentUser);
 
         var gbCreate = Group("Create playlist");
         gbCreate.Controls.Add(Lbl("Name:", 10, 22));
@@ -119,11 +125,11 @@ public partial class PlaylistBuilderForm : Form
         gbAdd.Controls.AddRange(new Control[] { txtTitle, txtArtist, txtGenre, numDuration, btnAddSong });
 
         var gbCollab = Group("Collaboration");
-        gbCollab.Controls.Add(Lbl("Invite user ID:", 10, 28));
-        numInvite.Location = new Point(105, 24);
-        btnInvite.Location = new Point(185, 22);
-        lblMembers.Location = new Point(290, 28);
-        gbCollab.Controls.AddRange(new Control[] { numInvite, btnInvite, lblMembers });
+        gbCollab.Controls.Add(Lbl("Invite user:", 10, 28));
+        cmbInvite.Location = new Point(90, 24);
+        btnInvite.Location = new Point(290, 22);
+        lblMembers.Location = new Point(10, 60);
+        gbCollab.Controls.AddRange(new Control[] { cmbInvite, btnInvite, lblMembers });
 
         var gbSongs = Group("Songs in playlist");
         ConfigureGrid(gridSongs);
@@ -143,7 +149,7 @@ public partial class PlaylistBuilderForm : Form
         var right = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4 };
         right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         right.RowStyles.Add(new RowStyle(SizeType.Absolute, 85));
-        right.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
+        right.RowStyles.Add(new RowStyle(SizeType.Absolute, 90));
         right.RowStyles.Add(new RowStyle(SizeType.Percent, 55));
         right.RowStyles.Add(new RowStyle(SizeType.Percent, 45));
         right.Controls.Add(gbAdd, 0, 0);
@@ -201,13 +207,18 @@ public partial class PlaylistBuilderForm : Form
     {
         Load += async (_, _) =>
         {
+            await Safe(LoadUsersAsync);
             await Safe(() => LoadPlaylistsAsync());
-            tmr.Start();
+            if (!IsDisposed) tmr.Start();
         };
         FormClosing += (_, _) => tmr.Stop();
 
         btnCreate.Click += async (_, _) => await Safe(CreateAsync);
-        btnRefresh.Click += async (_, _) => await Safe(() => LoadPlaylistsAsync());
+        btnRefresh.Click += async (_, _) =>
+        {
+            await Safe(LoadUsersAsync);
+            await Safe(() => LoadPlaylistsAsync());
+        };
         btnAddSong.Click += async (_, _) => await Safe(AddSongAsync);
         btnInvite.Click += async (_, _) => await Safe(InviteAsync);
         btnVote.Click += async (_, _) => await Safe(VoteAsync);
@@ -253,12 +264,25 @@ public partial class PlaylistBuilderForm : Form
         SetStatus($"Loaded {list.Count} playlist(s).", false);
     }
 
+    private async Task LoadUsersAsync()
+    {
+        using var api = new EventsApiClient(ClientSettings.EventsApiBaseUrl);
+        var users = await api.GetUsersAsync();
+        if (!IsDisposed)
+        {
+            _users = users.Where(user => user.Role == "User" && user.Id != UserId).ToList();
+            BindInvitations();
+        }
+    }
+
     private async Task RefreshSelectedAsync()
     {
         var sel = Current;
+        if (_detail?.Id != sel?.Id) BindInvitations();
         if (sel is null)
         {
             _detail = null;
+            BindInvitations();
             lblMembers.Text = "No playlist selected";
             BindSongs();
             BindRankings(new List<RankingModel>());
@@ -272,11 +296,14 @@ public partial class PlaylistBuilderForm : Form
         if (Current?.Id != sel.Id) return; // user picked another playlist meanwhile
 
         _detail = detail;
+        BindInvitations();
         lblMembers.Text = detail is null ? "" :
             detail.IsCollaborative
-                ? $"Owner: #{detail.CreatedBy}   Collaborators: " +
-                  (detail.Collaborators.Count == 0 ? "none yet" : string.Join(", ", detail.Collaborators.Select(c => "#" + c)))
-                : $"Private playlist (owner #{detail.CreatedBy})";
+                ? $"Owner: {UserSession.DisplayUser(detail.CreatedBy)}   Collaborators: " +
+                  (detail.Collaborators.Count == 0 ? "none yet" : string.Join(", ", detail.Collaborators.Select(id => UserSession.DisplayUser(id))))
+                : $"Private playlist (owner {UserSession.DisplayUser(detail.CreatedBy)})";
+        btnVote.Enabled = detail?.IsCollaborative == true
+            && (detail.CreatedBy == UserId || detail.Collaborators.Contains(UserId));
 
         BindSongs();
         BindRankings(ranks);
@@ -331,9 +358,14 @@ public partial class PlaylistBuilderForm : Form
     private async Task InviteAsync()
     {
         if (Current is null) { SetStatus("Select a playlist first.", true); return; }
+        if (cmbInvite.SelectedItem is not RegisteredUser invitedUser)
+        {
+            SetStatus("Select a registered user to invite. Refresh the list to load new users.", true);
+            return;
+        }
 
         var r = await SendAsync(HttpMethod.Put, $"api/playlists/{Current.Id}/invite",
-            new { invitedBy = UserId, invitedUserId = (int)numInvite.Value });
+            new { invitedBy = UserId, invitedUserId = invitedUser.Id });
 
         SetStatus(r.Message, !r.Ok);
         if (r.Ok) await RefreshSelectedAsync();
@@ -372,6 +404,18 @@ public partial class PlaylistBuilderForm : Form
     // =====================================================================
     // BINDING
     // =====================================================================
+    private void BindInvitations()
+    {
+        int? selectedId = (cmbInvite.SelectedItem as RegisteredUser)?.Id;
+        var available = _detail is { IsCollaborative: true } detail && detail.Id == Current?.Id
+            ? _users.Where(user => user.Id != detail.CreatedBy && !detail.Collaborators.Contains(user.Id)).ToList()
+            : new List<RegisteredUser>();
+        cmbInvite.DataSource = available;
+        if (available.Find(user => user.Id == selectedId) is { } selected)
+            cmbInvite.SelectedItem = selected;
+        cmbInvite.Enabled = btnInvite.Enabled = available.Count > 0;
+    }
+
     private void BindSongs()
     {
         var q = txtSearch.Text.Trim();
@@ -460,7 +504,7 @@ public partial class PlaylistBuilderForm : Form
         try { await action(); }
         catch (HttpRequestException)
         {
-            SetStatus("Cannot reach the API. Is VibeHive.Playlist.Api running, and is ClientSettings.Playlist correct?", true);
+            SetStatus("Cannot reach a required API. Check that Playlist and Events are running at the addresses in ClientSettings.", true);
         }
         catch (TaskCanceledException) { SetStatus("The API request timed out.", true); }
         catch (JsonException) { SetStatus("Unexpected response from the API.", true); }
@@ -483,7 +527,7 @@ public record PlaylistModel(
     List<int> Songs, List<SongModel> SongDetails, List<int> Collaborators)
 {
     public override string ToString() =>
-        $"{Name}{(IsCollaborative ? " (collab)" : "")}  -  owner #{CreatedBy}";
+        $"{Name}{(IsCollaborative ? " (collab)" : "")}  -  {UserSession.DisplayUser(CreatedBy)}";
 }
 
 public record RankingModel(int Rank, int SongId, string Title, string Artist, string Genre, int Votes);

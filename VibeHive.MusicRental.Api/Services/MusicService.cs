@@ -31,7 +31,7 @@ public class MusicService : IDisposable
         return albums;
     }
 
-    public async Task<Album> Add(Album album)
+    public async Task<Album> Add(Album album, string authorization)
     {
         var request = new InventoryAlbum
         {
@@ -41,37 +41,39 @@ public class MusicService : IDisposable
             Year = album.Year,
             Available = album.Available
         };
-        var addedAlbum = await client.AddAlbumAsync(request, deadline: Deadline());
+        var addedAlbum = await client.AddAlbumAsync(request, headers: AuthHeaders(authorization), deadline: Deadline());
         return ToModel(addedAlbum);
     }
 
-    public async Task Delete(int id)
+    public async Task Delete(int id, string authorization)
     {
-        await client.DeleteAlbumAsync(new AlbumRequest { Id = id }, deadline: Deadline());
+        await client.DeleteAlbumAsync(new AlbumRequest { Id = id }, headers: AuthHeaders(authorization), deadline: Deadline());
     }
 
-    public async Task<Album> Reserve(int albumId, string reservationId)
+    public async Task<Album> Reserve(int albumId, string reservationId, string authorization)
     {
         var request = new ReservationRequest
         {
             AlbumId = albumId,
             ReservationId = reservationId
         };
-        var album = await client.ReserveAlbumAsync(request, deadline: Deadline());
+        var album = await client.ReserveAlbumAsync(request, headers: AuthHeaders(authorization), deadline: Deadline());
         return ToModel(album);
     }
 
-    public async Task Release(int albumId, string reservationId)
+    public async Task Release(int albumId, string reservationId, string authorization)
     {
         var request = new ReservationRequest
         {
             AlbumId = albumId,
             ReservationId = reservationId
         };
-        await client.ReleaseAlbumAsync(request, deadline: Deadline());
+        await client.ReleaseAlbumAsync(request, headers: AuthHeaders(authorization), deadline: Deadline());
     }
 
     private static DateTime Deadline() => DateTime.UtcNow.AddSeconds(5);
+
+    private static Metadata AuthHeaders(string authorization) => new() { { "authorization", authorization } };
 
     private static Album ToModel(InventoryAlbum album)
     {
