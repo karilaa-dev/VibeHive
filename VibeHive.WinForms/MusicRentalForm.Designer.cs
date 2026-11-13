@@ -149,6 +149,7 @@ partial class MusicRentalForm
         //
         dgvAlbums.AllowUserToAddRows = false;
         dgvAlbums.AllowUserToDeleteRows = false;
+        dgvAlbums.AllowUserToResizeRows = false;
         dgvAlbums.AutoGenerateColumns = false;
         dgvAlbums.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         dgvAlbums.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -255,6 +256,7 @@ partial class MusicRentalForm
         //
         dgvRentals.AllowUserToAddRows = false;
         dgvRentals.AllowUserToDeleteRows = false;
+        dgvRentals.AllowUserToResizeRows = false;
         dgvRentals.AutoGenerateColumns = false;
         dgvRentals.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         dgvRentals.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
