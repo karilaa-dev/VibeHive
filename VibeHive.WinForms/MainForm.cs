@@ -1,9 +1,6 @@
-using System.Net.Http.Json;
 using Grpc.Core;
 using Grpc.Net.Client;
 using VibeHive.Inventory;
-using Album = VibeHive.WinForms.Models.Album;
-using Rental = VibeHive.WinForms.Models.Rental;
 
 namespace VibeHive.WinForms;
 
@@ -16,12 +13,18 @@ public partial class MainForm : Form
     };
     private readonly GrpcChannel inventoryChannel = GrpcChannel.ForAddress(ClientSettings.AlbumInventory);
     private readonly AlbumInventory.AlbumInventoryClient inventoryClient;
+    private static bool exampleDataLoaded;
     private bool checkingApiStatus;
+    public bool SignOutRequested { get; private set; }
 
     public MainForm()
     {
         inventoryClient = new AlbumInventory.AlbumInventoryClient(inventoryChannel);
         InitializeComponent();
+        sessionLabel.Text = $"Signed in as {UserSession.DisplayUser(UserSession.UserId)} [{UserSession.Role}]";
+        albumInventoryButton.Enabled = UserSession.IsAdmin;
+        playlistBuilderButton.Enabled = UserSession.CanUsePlaylists;
+        loadExampleDataButton.Enabled = UserSession.IsAdmin && !exampleDataLoaded;
     }
 
     private async void MainForm_Shown(object? sender, EventArgs e)
@@ -31,6 +34,8 @@ public partial class MainForm : Form
 
         apiStatusLabel.ToolTipText = $"{ClientSettings.MusicRental} checked every 5 seconds";
         inventoryStatusLabel.ToolTipText = $"{ClientSettings.AlbumInventory} checked every 5 seconds";
+        playlistStatusLabel.ToolTipText = $"{ClientSettings.Playlist} checked every 5 seconds";
+        eventsStatusLabel.ToolTipText = $"{ClientSettings.EventsApiBaseUrl} checked every 5 seconds";
         await CheckApiStatusAsync();
         if (!IsDisposed)
             apiStatusTimer.Start();
@@ -49,8 +54,11 @@ public partial class MainForm : Form
         checkingApiStatus = true;
         try
         {
-            await CheckMusicRentalStatusAsync();
-            await CheckInventoryStatusAsync();
+            await Task.WhenAll(
+                CheckRestStatusAsync(ClientSettings.MusicRental, apiStatusLabel, "Music Rental"),
+                CheckRestStatusAsync(ClientSettings.Playlist, playlistStatusLabel, "Playlists"),
+                CheckRestStatusAsync(ClientSettings.EventsApiBaseUrl, eventsStatusLabel, "Events"),
+                CheckInventoryStatusAsync());
         }
         finally
         {
@@ -58,23 +66,23 @@ public partial class MainForm : Form
         }
     }
 
-    private async Task CheckMusicRentalStatusAsync()
+    private async Task CheckRestStatusAsync(string address, ToolStripStatusLabel label, string service)
     {
         try
         {
-            using var response = await musicRentalApi.GetAsync("api/music", HttpCompletionOption.ResponseHeadersRead);
+            using var response = await musicRentalApi.GetAsync(address + "health", HttpCompletionOption.ResponseHeadersRead);
             if (response.IsSuccessStatusCode)
-                ShowApiStatus(apiStatusLabel, "Music Rental API", "Online", Color.ForestGreen);
+                ShowApiStatus(label, service, "Online", Color.ForestGreen);
             else
-                ShowApiStatus(apiStatusLabel, "Music Rental API", $"Error ({(int)response.StatusCode})", Color.DarkOrange);
+                ShowApiStatus(label, service, $"Error ({(int)response.StatusCode})", Color.DarkOrange);
         }
         catch (HttpRequestException)
         {
-            ShowApiStatus(apiStatusLabel, "Music Rental API", "Offline", Color.Firebrick);
+            ShowApiStatus(label, service, "Offline", Color.Firebrick);
         }
         catch (TaskCanceledException)
         {
-            ShowApiStatus(apiStatusLabel, "Music Rental API", "Offline", Color.Firebrick);
+            ShowApiStatus(label, service, "Offline", Color.Firebrick);
         }
     }
 
@@ -106,110 +114,22 @@ public partial class MainForm : Form
         label.ForeColor = color;
     }
 
-    private async void loadExampleDataButton_Click(object? sender, EventArgs e)
-    {
-        menuPanel.Enabled = false;
-        try
-        {
-            string message = await LoadExampleDataAsync();
-            if (!IsDisposed)
-                MessageBox.Show(this, message, "Example Data");
-        }
-        catch (Exception error)
-        {
-            if (!IsDisposed)
-            {
-                string message = error.Message;
-                if (error is HttpRequestException || error is TaskCanceledException)
-                    message = "Could not reach Music Rental. Start Music Rental and Album Inventory, then try again.";
-                MessageBox.Show(this, message, "Example Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
-        finally
-        {
-            if (!IsDisposed)
-                menuPanel.Enabled = true;
-        }
-    }
-
-    private async Task<string> LoadExampleDataAsync()
-    {
-        using var api = new HttpClient
-        {
-            BaseAddress = new Uri(ClientSettings.MusicRental),
-            Timeout = TimeSpan.FromSeconds(10)
-        };
-        using var libraryResponse = await api.GetAsync("api/music?includeUnavailable=true");
-        await CheckExampleResponseAsync(libraryResponse);
-        var library = await libraryResponse.Content.ReadFromJsonAsync<List<Album>>() ?? new List<Album>();
-
-        var examples = new List<Album>
-        {
-            new Album { Title = "Discovery", Artist = "Daft Punk", Genre = "Electronic", Year = 2001 },
-            new Album { Title = "Kind of Blue", Artist = "Miles Davis", Genre = "Jazz", Year = 1959 },
-            new Album { Title = "Abbey Road", Artist = "The Beatles", Genre = "Rock", Year = 1969 },
-            new Album { Title = "Thriller", Artist = "Michael Jackson", Genre = "Pop", Year = 1982 },
-            new Album { Title = "Rumours", Artist = "Fleetwood Mac", Genre = "Rock", Year = 1977 }
-        };
-        var exampleAlbums = new List<Album>();
-        int addedAlbums = 0;
-        foreach (var example in examples)
-        {
-            var album = library.FirstOrDefault(item =>
-                string.Equals(item.Title, example.Title, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(item.Artist, example.Artist, StringComparison.OrdinalIgnoreCase)
-                && item.Year == example.Year);
-            if (album == null)
-            {
-                using var response = await api.PostAsJsonAsync("api/music", example);
-                await CheckExampleResponseAsync(response);
-                album = await response.Content.ReadFromJsonAsync<Album>()
-                    ?? throw new InvalidOperationException("The API did not return the added album.");
-                library.Add(album);
-                addedAlbums++;
-            }
-            exampleAlbums.Add(album);
-        }
-
-        using var rentalsResponse = await api.GetAsync("api/rentals");
-        await CheckExampleResponseAsync(rentalsResponse);
-        var rentals = await rentalsResponse.Content.ReadFromJsonAsync<List<Rental>>() ?? new List<Rental>();
-        string[] customers = { "Alex Morgan", "Jamie Lee" };
-        int addedRentals = 0;
-        for (int index = 0; index < customers.Length; index++)
-        {
-            var album = exampleAlbums[index];
-            if (!album.Available || rentals.Any(rental => rental.AlbumId == album.Id))
-                continue;
-
-            var request = new { UserId = 1001 + index, UserName = customers[index], AlbumId = album.Id };
-            using var response = await api.PostAsJsonAsync("api/rentals", request);
-            await CheckExampleResponseAsync(response);
-            addedRentals++;
-        }
-
-        return $"Added {addedAlbums} example albums and {addedRentals} rentals. "
-            + "Existing albums and active rentals were kept. Playlist and Events are still starter APIs.";
-    }
-
-    private static async Task CheckExampleResponseAsync(HttpResponseMessage response)
-    {
-        if (!response.IsSuccessStatusCode)
-        {
-            string message = await response.Content.ReadAsStringAsync();
-            throw new InvalidOperationException(string.IsNullOrWhiteSpace(message)
-                ? response.ReasonPhrase : message.Trim('"'));
-        }
-    }
-
     private void musicRentalButton_Click(object? sender, EventArgs e)
     {
         using var form = new MusicRentalForm();
         ShowSubMenu(form);
     }
 
+    private void logoutButton_Click(object? sender, EventArgs e)
+    {
+        SignOutRequested = true;
+        UserSession.Clear();
+        Close();
+    }
+
     private void playlistBuilderButton_Click(object? sender, EventArgs e)
     {
+        if (!UserSession.CanUsePlaylists) return;
         using var form = new PlaylistBuilderForm();
         ShowSubMenu(form);
     }
@@ -222,8 +142,40 @@ public partial class MainForm : Form
 
     private void albumInventoryButton_Click(object? sender, EventArgs e)
     {
+        if (!UserSession.IsAdmin) return;
         using var form = new AlbumInventoryForm();
         ShowSubMenu(form);
+    }
+
+    private async void loadExampleDataButton_Click(object? sender, EventArgs e)
+    {
+        if (!UserSession.IsAdmin || exampleDataLoaded) return;
+        menuPanel.Enabled = false;
+        try
+        {
+            string message = await ExampleData.LoadAsync();
+            exampleDataLoaded = true;
+            if (!IsDisposed)
+                MessageBox.Show(this, message, "Example Data");
+        }
+        catch (Exception error)
+        {
+            if (!IsDisposed)
+            {
+                string message = error.Message;
+                if (error is HttpRequestException || error is TaskCanceledException)
+                    message = "Could not reach a required service. Start all four services, then try again.";
+                MessageBox.Show(this, message, "Example Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+        finally
+        {
+            if (!IsDisposed)
+            {
+                menuPanel.Enabled = true;
+                loadExampleDataButton.Enabled = UserSession.IsAdmin && !exampleDataLoaded;
+            }
+        }
     }
 
     private void ShowSubMenu(Form form)

@@ -8,6 +8,7 @@ public partial class AlbumInventoryForm : Form
 {
     private readonly GrpcChannel channel = GrpcChannel.ForAddress(ClientSettings.AlbumInventory);
     private readonly AlbumInventory.AlbumInventoryClient client;
+    private readonly Metadata authHeaders = new() { { "authorization", $"Bearer {UserSession.Token}" } };
     private bool updatingControls;
     private int selectedId;
 
@@ -16,6 +17,8 @@ public partial class AlbumInventoryForm : Form
         client = new AlbumInventory.AlbumInventoryClient(channel);
         InitializeComponent();
         ClearEditor();
+        btnAdd.Enabled = btnUpdate.Enabled = btnDelete.Enabled = UserSession.IsAdmin;
+        txtTitle.Enabled = txtArtist.Enabled = txtGenre.Enabled = numYear.Enabled = chkAvailable.Enabled = UserSession.IsAdmin;
     }
 
     private async void AlbumInventoryForm_Shown(object? sender, EventArgs e)
@@ -127,7 +130,7 @@ public partial class AlbumInventoryForm : Form
         workPanel.Enabled = false;
         try
         {
-            var album = await client.AddAlbumAsync(ReadEditor(), deadline: Deadline());
+            var album = await client.AddAlbumAsync(ReadEditor(), headers: authHeaders, deadline: Deadline());
             await LoadAlbumsAsync(album.Id);
         }
         catch (Exception error)
@@ -152,7 +155,7 @@ public partial class AlbumInventoryForm : Form
         workPanel.Enabled = false;
         try
         {
-            var album = await client.UpdateAlbumAsync(ReadEditor(), deadline: Deadline());
+            var album = await client.UpdateAlbumAsync(ReadEditor(), headers: authHeaders, deadline: Deadline());
             await LoadAlbumsAsync(album.Id);
         }
         catch (Exception error)
@@ -181,7 +184,7 @@ public partial class AlbumInventoryForm : Form
         workPanel.Enabled = false;
         try
         {
-            await client.DeleteAlbumAsync(new AlbumRequest { Id = id }, deadline: Deadline());
+            await client.DeleteAlbumAsync(new AlbumRequest { Id = id }, headers: authHeaders, deadline: Deadline());
             ClearEditor();
             await LoadAlbumsAsync();
         }

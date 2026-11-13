@@ -1,17 +1,18 @@
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
 namespace VibeHive.WinForms.Services;
 
-public class EventsApiClient
+public class EventsApiClient : IDisposable
 {
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
     public EventsApiClient(string baseUrl)
     {
-        _http = new HttpClient { BaseAddress = new Uri(baseUrl) };
+        _http = new HttpClient { BaseAddress = new Uri(baseUrl), Timeout = TimeSpan.FromSeconds(10) };
     }
 
     private void SetAuthHeader()
@@ -49,6 +50,17 @@ public class EventsApiClient
         return await _http.GetStringAsync("/api/events");
     }
 
+    public async Task<List<RegisteredUser>> GetUsersAsync()
+    {
+        SetAuthHeader();
+        var users = await _http.GetFromJsonAsync<List<RegisteredUser>>("api/users") ?? new();
+        UserSession.UserNames.Clear();
+        foreach (var user in users) UserSession.UserNames[user.Id] = user.Name;
+        return users;
+    }
+
+    public void Dispose() => _http.Dispose();
+
     public async Task<bool> CreateEventAsync(string name, DateTime date, string venue, string genre, int tickets)
     {
         SetAuthHeader();
@@ -60,7 +72,7 @@ public class EventsApiClient
     public async Task<bool> BookTicketAsync(int eventId)
     {
         SetAuthHeader();
-        var body = JsonSerializer.Serialize(new { eventId, userId = UserSession.UserId });
+        var body = JsonSerializer.Serialize(new { eventId });
         var res = await _http.PostAsync("/api/tickets", new StringContent(body, Encoding.UTF8, "application/json"));
         return res.IsSuccessStatusCode;
     }
@@ -68,7 +80,7 @@ public class EventsApiClient
     public async Task<string> GetUserTicketsJsonAsync()
     {
         SetAuthHeader();
-        return await _http.GetStringAsync($"/api/tickets/{UserSession.UserId}");
+        return await _http.GetStringAsync("/api/tickets");
     }
 
     public async Task<bool> CancelTicketAsync(int ticketId)
@@ -79,4 +91,9 @@ public class EventsApiClient
         var res = await _http.PatchAsync($"/api/tickets/{ticketId}/status", content);
         return res.IsSuccessStatusCode;
     }
+}
+
+public record RegisteredUser(int Id, string Name, string Role)
+{
+    public override string ToString() => UserSession.DisplayUser(Id, Name);
 }

@@ -45,6 +45,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapGet("/health", () => Results.Ok());
 app.MapControllers();
 
 app.Run();

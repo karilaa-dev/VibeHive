@@ -14,4 +14,6 @@ The contract is `Protos/album_inventory.proto`. Clients link this file to genera
 
 Invalid data returns `InvalidArgument`, missing albums return `NotFound`, and protected changes return `FailedPrecondition`. Rented albums cannot be deleted or forced available. Metadata can still be edited.
 
+`AddAlbum`, `UpdateAlbum` and `DeleteAlbum` require an Events JWT with the Admin role in the `authorization` metadata header (`Bearer <token>`). `ReserveAlbum` and `ReleaseAlbum` accept any authenticated role; Music Rental forwards the caller's JWT. `GetAlbum` and `ListAlbums` remain public for browsing and service status. Missing/invalid tokens return `Unauthenticated`; non-admin album edits return `PermissionDenied`. JWT key, issuer and audience must match Events and the REST APIs.
+
 Restart this service and Music Rental together to reset the demo. Playlist songs have their own IDs. A song may optionally reference an album ID if the team adds that relationship.

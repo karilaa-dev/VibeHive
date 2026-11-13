@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using VibeHive.MusicRental.Api.Models;
 using VibeHive.MusicRental.Api.Services;
 
@@ -22,15 +23,17 @@ public class MusicController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Album>> AddAlbum(Album album)
     {
-        return Ok(await music.Add(album));
+        return Ok(await music.Add(album, Request.Headers.Authorization.ToString()));
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> DeleteAlbum(int id)
     {
-        await music.Delete(id);
+        await music.Delete(id, Request.Headers.Authorization.ToString());
         return Ok("Album removed successfully!");
     }
 }
