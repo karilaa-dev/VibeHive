@@ -46,6 +46,7 @@ partial class MusicRentalForm
         lblAlbum = new Label();
         numUserId = new NumericUpDown();
         txtUserName = new TextBox();
+        cmbCustomer = new ComboBox();
         cmbAlbum = new ComboBox();
         btnRentAlbum = new Button();
         btnReturnAlbum = new Button();
@@ -68,8 +69,8 @@ partial class MusicRentalForm
         //
         // tabControlMain
         //
-        tabControlMain.Controls.Add(albumsTabPage);
         tabControlMain.Controls.Add(rentalsTabPage);
+        tabControlMain.Controls.Add(albumsTabPage);
         tabControlMain.Dock = DockStyle.Fill;
         tabControlMain.Name = "tabControlMain";
         tabControlMain.Size = new Size(1000, 510);
@@ -84,7 +85,7 @@ partial class MusicRentalForm
         albumsTabPage.Size = new Size(992, 482);
         albumsTabPage.Text = "Albums";
         albumsTabPage.UseVisualStyleBackColor = true;
-        albumsTabPage.TabIndex = 0;
+        albumsTabPage.TabIndex = 1;
         //
         // Album entry fields
         //
@@ -181,13 +182,13 @@ partial class MusicRentalForm
         //
         // rentalsTabPage
         //
-        rentalsTabPage.Controls.AddRange(new Control[] { lblUserId, numUserId, lblUserName, txtUserName,
+        rentalsTabPage.Controls.AddRange(new Control[] { lblUserId, numUserId, lblUserName, txtUserName, cmbCustomer,
             lblAlbum, cmbAlbum, btnRentAlbum, btnReturnAlbum, btnRefreshRentals, dgvRentals });
         rentalsTabPage.Name = "rentalsTabPage";
         rentalsTabPage.Size = new Size(992, 482);
         rentalsTabPage.Text = "Active Rentals";
         rentalsTabPage.UseVisualStyleBackColor = true;
-        rentalsTabPage.TabIndex = 1;
+        rentalsTabPage.TabIndex = 0;
         //
         // Rental entry fields
         //
@@ -202,41 +203,47 @@ partial class MusicRentalForm
         numUserId.Size = new Size(215, 23);
         numUserId.TabIndex = 0;
         lblUserName.AutoSize = true;
-        lblUserName.Location = new Point(12, 70);
+        lblUserName.Location = new Point(12, 14);
         lblUserName.Text = "Customer name";
-        txtUserName.Location = new Point(12, 90);
+        txtUserName.Location = new Point(12, 34);
         txtUserName.Name = "txtUserName";
         txtUserName.Size = new Size(215, 23);
         txtUserName.TabIndex = 1;
+        cmbCustomer.Location = new Point(12, 34);
+        cmbCustomer.Name = "cmbCustomer";
+        cmbCustomer.Size = new Size(215, 23);
+        cmbCustomer.DropDownWidth = 320;
+        cmbCustomer.DropDownStyle = ComboBoxStyle.DropDownList;
+        cmbCustomer.TabIndex = 1;
         lblAlbum.AutoSize = true;
-        lblAlbum.Location = new Point(12, 126);
+        lblAlbum.Location = new Point(12, 70);
         lblAlbum.Text = "Available album";
         cmbAlbum.DisplayMember = "Title";
         cmbAlbum.ValueMember = "Id";
         cmbAlbum.DropDownStyle = ComboBoxStyle.DropDownList;
         cmbAlbum.DropDownWidth = 400;
-        cmbAlbum.Location = new Point(12, 146);
+        cmbAlbum.Location = new Point(12, 90);
         cmbAlbum.Name = "cmbAlbum";
         cmbAlbum.Size = new Size(215, 23);
         cmbAlbum.TabIndex = 2;
         //
         // Rental buttons
         //
-        btnRentAlbum.Location = new Point(12, 190);
+        btnRentAlbum.Location = new Point(12, 134);
         btnRentAlbum.Name = "btnRentAlbum";
         btnRentAlbum.Size = new Size(215, 32);
         btnRentAlbum.Text = "Rent Album";
         btnRentAlbum.TabIndex = 3;
         btnRentAlbum.UseVisualStyleBackColor = true;
         btnRentAlbum.Click += btnRentAlbum_Click;
-        btnReturnAlbum.Location = new Point(12, 232);
+        btnReturnAlbum.Location = new Point(12, 176);
         btnReturnAlbum.Name = "btnReturnAlbum";
         btnReturnAlbum.Size = new Size(215, 32);
         btnReturnAlbum.Text = "Return Selected Rental";
         btnReturnAlbum.TabIndex = 4;
         btnReturnAlbum.UseVisualStyleBackColor = true;
         btnReturnAlbum.Click += btnReturnAlbum_Click;
-        btnRefreshRentals.Location = new Point(12, 274);
+        btnRefreshRentals.Location = new Point(12, 218);
         btnRefreshRentals.Name = "btnRefreshRentals";
         btnRefreshRentals.Size = new Size(215, 32);
         btnRefreshRentals.Text = "Refresh";
@@ -268,7 +275,8 @@ partial class MusicRentalForm
         rentalUserIdColumn.DataPropertyName = "UserId";
         rentalUserIdColumn.HeaderText = "User ID";
         rentalUserIdColumn.FillWeight = 55;
-        rentalUserNameColumn.DataPropertyName = "UserName";
+        rentalUserIdColumn.Visible = false;
+        rentalUserNameColumn.DataPropertyName = "UserDisplay";
         rentalUserNameColumn.HeaderText = "Customer";
         rentalUserNameColumn.FillWeight = 120;
         rentalAlbumColumn.DataPropertyName = "AlbumTitle";
@@ -289,7 +297,7 @@ partial class MusicRentalForm
         Controls.Add(tabControlMain);
         MinimumSize = new Size(900, 500);
         Name = "MusicRentalForm";
-        StartPosition = FormStartPosition.CenterParent;
+        StartPosition = FormStartPosition.CenterScreen;
         Text = "VibeHive Music Rental Management";
         Shown += MusicRentalForm_Shown;
         ((System.ComponentModel.ISupportInitialize)numYear).EndInit();
@@ -332,6 +340,7 @@ partial class MusicRentalForm
     private Label lblAlbum;
     private NumericUpDown numUserId;
     private TextBox txtUserName;
+    private ComboBox cmbCustomer;
     private ComboBox cmbAlbum;
     private Button btnRentAlbum;
     private Button btnReturnAlbum;

@@ -190,7 +190,7 @@ partial class AlbumInventoryForm
         MinimumSize = new Size(900, 500);
         Controls.Add(workPanel);
         Name = "AlbumInventoryForm";
-        StartPosition = FormStartPosition.CenterParent;
+        StartPosition = FormStartPosition.CenterScreen;
         Text = "VibeHive Album Inventory";
         Shown += AlbumInventoryForm_Shown;
         ((System.ComponentModel.ISupportInitialize)numYear).EndInit();

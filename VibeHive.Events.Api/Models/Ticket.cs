@@ -9,5 +9,5 @@ public class Ticket
     public DateTime BookedAt { get; set; } = DateTime.UtcNow;
 }
 
-public record BookTicketRequest(int EventId, int UserId);
+public record BookTicketRequest(int EventId);
 public record UpdateTicketStatusRequest(string Status);

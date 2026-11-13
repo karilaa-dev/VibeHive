@@ -29,7 +29,7 @@ public class RentalManager
         }
     }
 
-    public async Task<Rental> Rent(RentRequest request)
+    public async Task<Rental> Rent(RentRequest request, string authorization)
     {
         await gate.WaitAsync();
         try
@@ -50,7 +50,7 @@ public class RentalManager
             };
             try
             {
-                var album = await music.Reserve(request.AlbumId, rental.ReservationId);
+                var album = await music.Reserve(request.AlbumId, rental.ReservationId, authorization);
                 rental.AlbumTitle = album.Title;
             }
             catch (RpcException error) when (IsConnectionError(error))
@@ -70,7 +70,7 @@ public class RentalManager
         }
     }
 
-    public async Task<Rental> Return(int id)
+    public async Task<Rental> Return(int id, int userId, bool isAdmin, string authorization)
     {
         await gate.WaitAsync();
         try
@@ -78,12 +78,14 @@ public class RentalManager
             var rental = rentals.Find(item => item.Id == id);
             if (rental == null)
                 throw new RpcException(new Status(StatusCode.NotFound, "Rental not found."));
+            if (!isAdmin && rental.UserId != userId)
+                throw new RpcException(new Status(StatusCode.PermissionDenied, "You can only return your own rentals."));
             if (rental.ReturnDate != null)
                 throw new RpcException(new Status(StatusCode.FailedPrecondition, "This rental has already been returned."));
 
             try
             {
-                await music.Release(rental.AlbumId, rental.ReservationId);
+                await music.Release(rental.AlbumId, rental.ReservationId, authorization);
             }
             catch (RpcException error) when (rental.ReservationPending &&
                 error.StatusCode is StatusCode.NotFound or StatusCode.FailedPrecondition)

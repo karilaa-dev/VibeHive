@@ -6,6 +6,7 @@ public class Rental
     public int UserId { get; set; }
     public int AlbumId { get; set; }
     public string UserName { get; set; } = "";
+    public string UserDisplay => UserSession.DisplayUser(UserId, UserName);
     public string AlbumTitle { get; set; } = "";
     public DateTime RentalDate { get; set; }
     public DateTime? ReturnDate { get; set; }

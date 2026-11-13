@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.ComponentModel;
 using VibeHive.WinForms.Services;
 
 namespace VibeHive.WinForms;
@@ -6,12 +7,28 @@ namespace VibeHive.WinForms;
 public partial class EventManagementForm : Form
 {
     private readonly EventsApiClient _apiClient;
+    private readonly bool loginOnly;
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public EventManagementForm()
+    public EventManagementForm() : this(false) { }
+
+    public EventManagementForm(bool loginOnly)
     {
+        this.loginOnly = loginOnly;
         InitializeComponent();
         _apiClient = new EventsApiClient(ClientSettings.EventsApiBaseUrl);
+        if (loginOnly)
+        {
+            Text = "VibeHive - Login";
+            tabControlMain.TabPages.Clear();
+            tabControlMain.TabPages.Add(tabAuth);
+            tabAuth.Text = "Login & Registration";
+            AcceptButton = btnLogin;
+        }
+        else
+        {
+            tabControlMain.TabPages.Remove(tabAuth);
+        }
     }
 
     private async void EventManagementForm_Load(object sender, EventArgs e)
@@ -19,7 +36,7 @@ public partial class EventManagementForm : Form
         cmbRegRole.SelectedIndex = 0; // Default to "User"
         ApplyRolePermissions();
 
-        if (UserSession.IsLoggedIn)
+        if (!loginOnly && UserSession.IsLoggedIn)
         {
             await LoadUpcomingEventsAsync();
             await LoadUserBookingsAsync();
@@ -32,20 +49,18 @@ public partial class EventManagementForm : Form
 
         // Ensure this control name matches the label in EventManagementForm.Designer.cs
         lblSessionStatus.Text = isLoggedIn
-            ? $"Status: Logged in as {UserSession.UserName} [{UserSession.Role}]"
+            ? $"Status: Logged in as {UserSession.DisplayUser(UserSession.UserId)} [{UserSession.Role}]"
             : "Status: Not logged in";
 
-        // Hide the Logout button completely unless logged in
-        btnLogout.Visible = isLoggedIn;
-        btnLogout.Enabled = isLoggedIn;
         btnLogin.Enabled = !isLoggedIn;
 
         // Booking and cancellation permissions
         btnBookTicket.Enabled = isLoggedIn;
-        btnCancelBooking.Enabled = UserSession.IsAdmin;
+        btnCancelBooking.Enabled = btnCancelPastBooking.Enabled = isLoggedIn;
+        tabBookings.Text = UserSession.IsAdmin ? "All Bookings" : "My Bookings";
 
         // Show or hide the Create Event tab page based on role
-        if (UserSession.CanManageEvents)
+        if (!loginOnly && UserSession.CanManageEvents)
         {
             if (!tabControlMain.TabPages.Contains(tabCreateEvent))
             {
@@ -77,13 +92,14 @@ public partial class EventManagementForm : Form
 
         try
         {
+            btnLogin.Enabled = false;
+            btnRegister.Enabled = false;
             var success = await _apiClient.LoginAsync(email, password);
+            if (IsDisposed) return;
             if (success)
             {
-                MessageBox.Show($"Welcome, {UserSession.UserName}!", "Login Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                ApplyRolePermissions();
-                await LoadUpcomingEventsAsync();
-                await LoadUserBookingsAsync();
+                DialogResult = DialogResult.OK;
+                Close();
             }
             else
             {
@@ -92,7 +108,16 @@ public partial class EventManagementForm : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error during login: {ex.Message}", "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            if (!IsDisposed)
+                MessageBox.Show(this, $"Could not log in. Check that the Events API is running.\n{ex.Message}", "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            if (!IsDisposed)
+            {
+                btnLogin.Enabled = true;
+                btnRegister.Enabled = true;
+            }
         }
     }
 
@@ -115,6 +140,9 @@ public partial class EventManagementForm : Form
             if (success)
             {
                 MessageBox.Show("Registration successful! You can now log in.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                txtLoginEmail.Text = email;
+                txtLoginPassword.Clear();
+                txtLoginPassword.Focus();
                 txtRegName.Clear();
                 txtRegEmail.Clear();
                 txtRegPassword.Clear();
@@ -128,15 +156,6 @@ public partial class EventManagementForm : Form
         {
             MessageBox.Show($"Error registering user: {ex.Message}", "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
-    }
-
-    private void btnLogout_Click(object sender, EventArgs e)
-    {
-        UserSession.Clear();
-        dgvEvents.DataSource = null;
-        dgvBookings.DataSource = null;
-        ApplyRolePermissions();
-        MessageBox.Show("You have logged out.", "Session Closed", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     // --- Tab 2: Upcoming Events ---
@@ -259,8 +278,12 @@ public partial class EventManagementForm : Form
         try
         {
             var json = await _apiClient.GetUserTicketsJsonAsync();
-            var tickets = JsonSerializer.Deserialize<List<TicketViewModel>>(json, JsonOpts);
-            dgvBookings.DataSource = tickets;
+            var tickets = JsonSerializer.Deserialize<List<TicketViewModel>>(json, JsonOpts) ?? new();
+            if (IsDisposed) return;
+            var now = DateTime.Now;
+            dgvBookings.DataSource = tickets.Where(ticket => ticket.Status == "Booked" && ticket.Date.ToLocalTime() > now).ToList();
+            dgvPastBookings.DataSource = tickets.Where(ticket => ticket.Status != "Booked" || ticket.Date.ToLocalTime() <= now)
+                .OrderByDescending(ticket => ticket.Date).ToList();
         }
         catch (Exception ex)
         {
@@ -270,15 +293,22 @@ public partial class EventManagementForm : Form
 
     private async void btnCancelBooking_Click(object sender, EventArgs e)
     {
-        if (!UserSession.IsAdmin)
+        if (!UserSession.IsLoggedIn)
         {
-            MessageBox.Show("Only administrators can cancel bookings.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show("Please log in first to cancel a booking.", "Authentication Required", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
-        if (dgvBookings.CurrentRow?.DataBoundItem is not TicketViewModel selectedTicket)
+        var bookingsGrid = sender == btnCancelPastBooking ? dgvPastBookings : dgvBookings;
+        if (bookingsGrid.CurrentRow?.DataBoundItem is not TicketViewModel selectedTicket)
         {
             MessageBox.Show("Please select a booking to cancel.", "Selection Required", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        if (!UserSession.IsAdmin && selectedTicket.UserId != UserSession.UserId)
+        {
+            MessageBox.Show("You can only cancel your own bookings.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -329,6 +359,12 @@ public class TicketViewModel
 {
     public int Id { get; set; }
     public int EventId { get; set; }
+    [Browsable(false)]
+    public int UserId { get; set; }
+    [Browsable(false)]
+    public string UserName { get; set; } = "";
+    [DisplayName("User")]
+    public string UserDisplay => UserSession.DisplayUser(UserId, UserName);
     public string EventName { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public string Venue { get; set; } = string.Empty;
