@@ -16,6 +16,7 @@ public partial class EventManagementForm : Form
     {
         this.loginOnly = loginOnly;
         InitializeComponent();
+        dtpEvtDate.Value = DateTime.Today.AddDays(1);
         _apiClient = new EventsApiClient(ClientSettings.EventsApiBaseUrl);
         if (loginOnly)
         {
@@ -238,6 +239,18 @@ public partial class EventManagementForm : Form
         if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(venue) || string.IsNullOrWhiteSpace(genre))
         {
             MessageBox.Show("Please fill out all event fields.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        if (date <= DateTime.Now)
+        {
+            MessageBox.Show("Event date must be in the future.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        if (tickets < numEvtTickets.Minimum || tickets > numEvtTickets.Maximum)
+        {
+            MessageBox.Show("Ticket count must be between 1 and 100000.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
