@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using VibeHive.WinForms.Models;
+using VibeHive.WinForms.Services;
 
 namespace VibeHive.WinForms;
 
@@ -16,6 +18,18 @@ public partial class MusicRentalForm : Form
     {
         InitializeComponent();
         numYear.Value = DateTime.Now.Year;
+        api.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", UserSession.Token);
+        numUserId.Maximum = int.MaxValue;
+        numUserId.Value = Math.Max(1, UserSession.UserId);
+        numUserId.Enabled = false;
+        lblUserId.Visible = numUserId.Visible = false;
+        txtUserName.Text = UserSession.DisplayUser(UserSession.UserId);
+        txtUserName.ReadOnly = true;
+        txtUserName.Visible = !UserSession.IsAdmin;
+        cmbCustomer.Visible = UserSession.IsAdmin;
+        btnAddAlbum.Enabled = UserSession.IsAdmin;
+        btnDeleteAlbum.Enabled = UserSession.IsAdmin;
+        txtTitle.Enabled = txtArtist.Enabled = txtGenre.Enabled = numYear.Enabled = UserSession.IsAdmin;
     }
 
     private async void MusicRentalForm_Shown(object? sender, EventArgs e)
@@ -58,6 +72,26 @@ public partial class MusicRentalForm : Form
             if (!IsDisposed)
                 cmbAlbum.DataSource = null;
             throw;
+        }
+
+        if (UserSession.IsAdmin)
+        {
+            int? selectedUserId = (cmbCustomer.SelectedItem as RegisteredUser)?.Id;
+            cmbCustomer.DataSource = null;
+            using var eventsApi = new EventsApiClient(ClientSettings.EventsApiBaseUrl);
+            try
+            {
+                var users = await eventsApi.GetUsersAsync();
+                if (IsDisposed) return;
+                var customers = users.Where(user => user.Role == "User").ToList();
+                cmbCustomer.DataSource = customers;
+                if (selectedUserId.HasValue && customers.Any(user => user.Id == selectedUserId.Value))
+                    cmbCustomer.SelectedItem = customers.First(user => user.Id == selectedUserId.Value);
+            }
+            catch (Exception error) when (error is HttpRequestException or TaskCanceledException)
+            {
+                throw new InvalidOperationException("Could not load customers from Events. Start Events, then click Refresh.", error);
+            }
         }
     }
 
@@ -135,9 +169,10 @@ public partial class MusicRentalForm : Form
     private async void btnRentAlbum_Click(object? sender, EventArgs e)
     {
         var album = cmbAlbum.SelectedItem as Album;
-        if (album == null || string.IsNullOrWhiteSpace(txtUserName.Text))
+        var customer = UserSession.IsAdmin ? cmbCustomer.SelectedItem as RegisteredUser : null;
+        if (album == null || (UserSession.IsAdmin && customer == null))
         {
-            MessageBox.Show(this, "Enter a customer name and select an available album.", "Music Rental");
+            MessageBox.Show(this, "Select an available album and, for Admins, a regular customer.", "Music Rental");
             return;
         }
 
@@ -146,8 +181,8 @@ public partial class MusicRentalForm : Form
         {
             var rental = new
             {
-                UserId = (int)numUserId.Value,
-                UserName = txtUserName.Text.Trim(),
+                UserId = customer?.Id ?? UserSession.UserId,
+                UserName = customer?.Name ?? UserSession.UserName,
                 AlbumId = album.Id
             };
             using var response = await api.PostAsJsonAsync("api/rentals", rental);

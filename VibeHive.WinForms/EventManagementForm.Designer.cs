@@ -6,9 +6,10 @@ partial class EventManagementForm
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing && (components != null))
+        if (disposing)
         {
-            components.Dispose();
+            components?.Dispose();
+            _apiClient?.Dispose();
         }
         base.Dispose(disposing);
     }
@@ -38,7 +39,6 @@ partial class EventManagementForm
         this.cmbRegRole = new System.Windows.Forms.ComboBox();
         this.btnRegister = new System.Windows.Forms.Button();
         this.lblSessionStatus = new System.Windows.Forms.Label();
-        this.btnLogout = new System.Windows.Forms.Button();
 
         // Tab 2: Upcoming Events
         this.tabEvents = new System.Windows.Forms.TabPage();
@@ -67,6 +67,10 @@ partial class EventManagementForm
         this.dgvBookings = new System.Windows.Forms.DataGridView();
         this.btnRefreshBookings = new System.Windows.Forms.Button();
         this.btnCancelBooking = new System.Windows.Forms.Button();
+        this.tabPastBookings = new System.Windows.Forms.TabPage();
+        this.dgvPastBookings = new System.Windows.Forms.DataGridView();
+        this.btnRefreshPastBookings = new System.Windows.Forms.Button();
+        this.btnCancelPastBooking = new System.Windows.Forms.Button();
 
         this.tabControlMain.SuspendLayout();
         this.tabAuth.SuspendLayout();
@@ -79,6 +83,8 @@ partial class EventManagementForm
         ((System.ComponentModel.ISupportInitialize)(this.numEvtTickets)).BeginInit();
         this.tabBookings.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)(this.dgvBookings)).BeginInit();
+        this.tabPastBookings.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)(this.dgvPastBookings)).BeginInit();
         this.SuspendLayout();
 
         // tabControlMain
@@ -86,6 +92,7 @@ partial class EventManagementForm
         this.tabControlMain.Controls.Add(this.tabEvents);
         this.tabControlMain.Controls.Add(this.tabCreateEvent);
         this.tabControlMain.Controls.Add(this.tabBookings);
+        this.tabControlMain.Controls.Add(this.tabPastBookings);
         this.tabControlMain.Dock = System.Windows.Forms.DockStyle.Fill;
         this.tabControlMain.Location = new System.Drawing.Point(0, 0);
         this.tabControlMain.Name = "tabControlMain";
@@ -94,7 +101,6 @@ partial class EventManagementForm
         this.tabControlMain.TabIndex = 0;
 
         // tabAuth
-        this.tabAuth.Controls.Add(this.btnLogout);
         this.tabAuth.Controls.Add(this.lblSessionStatus);
         this.tabAuth.Controls.Add(this.grpRegister);
         this.tabAuth.Controls.Add(this.grpLogin);
@@ -178,17 +184,12 @@ partial class EventManagementForm
         this.btnRegister.Text = "Register";
         this.btnRegister.Click += new System.EventHandler(this.btnRegister_Click);
 
-        // lblSessionStatus & btnLogout
+        // lblSessionStatus
         this.lblSessionStatus.AutoSize = true;
         this.lblSessionStatus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
         this.lblSessionStatus.Location = new System.Drawing.Point(20, 305);
         this.lblSessionStatus.Size = new System.Drawing.Size(200, 23);
         this.lblSessionStatus.Text = "Status: Not logged in";
-
-        this.btnLogout.Location = new System.Drawing.Point(20, 345);
-        this.btnLogout.Size = new System.Drawing.Size(120, 35);
-        this.btnLogout.Text = "Log Out";
-        this.btnLogout.Click += new System.EventHandler(this.btnLogout_Click);
 
         // tabEvents
         this.tabEvents.Controls.Add(this.btnBookTicket);
@@ -202,6 +203,7 @@ partial class EventManagementForm
 
         this.dgvEvents.AllowUserToAddRows = false;
         this.dgvEvents.AllowUserToDeleteRows = false;
+        this.dgvEvents.AllowUserToResizeRows = false;
         this.dgvEvents.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
         this.dgvEvents.Location = new System.Drawing.Point(12, 12);
         this.dgvEvents.MultiSelect = false;
@@ -291,7 +293,8 @@ partial class EventManagementForm
 
         this.dgvBookings.AllowUserToAddRows = false;
         this.dgvBookings.AllowUserToDeleteRows = false;
-        this.dgvBookings.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+        this.dgvBookings.AllowUserToResizeRows = false;
+        this.dgvBookings.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
         this.dgvBookings.Location = new System.Drawing.Point(12, 12);
         this.dgvBookings.MultiSelect = false;
         this.dgvBookings.ReadOnly = true;
@@ -308,6 +311,36 @@ partial class EventManagementForm
         this.btnCancelBooking.Text = "Cancel Booking";
         this.btnCancelBooking.Click += new System.EventHandler(this.btnCancelBooking_Click);
 
+        // tabPastBookings
+        this.tabPastBookings.Controls.Add(this.btnCancelPastBooking);
+        this.tabPastBookings.Controls.Add(this.btnRefreshPastBookings);
+        this.tabPastBookings.Controls.Add(this.dgvPastBookings);
+        this.tabPastBookings.Location = new System.Drawing.Point(4, 29);
+        this.tabPastBookings.Name = "tabPastBookings";
+        this.tabPastBookings.Padding = new System.Windows.Forms.Padding(12);
+        this.tabPastBookings.Size = new System.Drawing.Size(852, 487);
+        this.tabPastBookings.Text = "Past / Cancelled Bookings";
+
+        this.dgvPastBookings.AllowUserToAddRows = false;
+        this.dgvPastBookings.AllowUserToDeleteRows = false;
+        this.dgvPastBookings.AllowUserToResizeRows = false;
+        this.dgvPastBookings.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
+        this.dgvPastBookings.Location = new System.Drawing.Point(12, 12);
+        this.dgvPastBookings.MultiSelect = false;
+        this.dgvPastBookings.ReadOnly = true;
+        this.dgvPastBookings.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+        this.dgvPastBookings.Size = new System.Drawing.Size(828, 380);
+
+        this.btnRefreshPastBookings.Location = new System.Drawing.Point(12, 410);
+        this.btnRefreshPastBookings.Size = new System.Drawing.Size(150, 36);
+        this.btnRefreshPastBookings.Text = "Refresh Bookings";
+        this.btnRefreshPastBookings.Click += new System.EventHandler(this.btnRefreshBookings_Click);
+
+        this.btnCancelPastBooking.Location = new System.Drawing.Point(680, 410);
+        this.btnCancelPastBooking.Size = new System.Drawing.Size(160, 36);
+        this.btnCancelPastBooking.Text = "Cancel Booking";
+        this.btnCancelPastBooking.Click += new System.EventHandler(this.btnCancelBooking_Click);
+
         // EventManagementForm
         this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
         this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -316,7 +349,7 @@ partial class EventManagementForm
         this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
         this.MaximizeBox = false;
         this.Name = "EventManagementForm";
-        this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+        this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
         this.Text = "VibeHive - Event Management & Ticketing";
         this.Load += new System.EventHandler(this.EventManagementForm_Load);
 
@@ -336,6 +369,8 @@ partial class EventManagementForm
         ((System.ComponentModel.ISupportInitialize)(this.numEvtTickets)).EndInit();
         this.tabBookings.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)(this.dgvBookings)).EndInit();
+        this.tabPastBookings.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)(this.dgvPastBookings)).EndInit();
         this.ResumeLayout(false);
     }
 
@@ -360,7 +395,6 @@ partial class EventManagementForm
     private System.Windows.Forms.ComboBox cmbRegRole;
     private System.Windows.Forms.Button btnRegister;
     private System.Windows.Forms.Label lblSessionStatus;
-    private System.Windows.Forms.Button btnLogout;
     private System.Windows.Forms.TabPage tabEvents;
     private System.Windows.Forms.DataGridView dgvEvents;
     private System.Windows.Forms.Button btnRefreshEvents;
@@ -383,4 +417,8 @@ partial class EventManagementForm
     private System.Windows.Forms.DataGridView dgvBookings;
     private System.Windows.Forms.Button btnRefreshBookings;
     private System.Windows.Forms.Button btnCancelBooking;
+    private System.Windows.Forms.TabPage tabPastBookings;
+    private System.Windows.Forms.DataGridView dgvPastBookings;
+    private System.Windows.Forms.Button btnRefreshPastBookings;
+    private System.Windows.Forms.Button btnCancelPastBooking;
 }

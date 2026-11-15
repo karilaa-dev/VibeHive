@@ -1,5 +1,6 @@
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Microsoft.AspNetCore.Authorization;
 using VibeHive.Inventory;
 
 namespace VibeHive.AlbumInventory.Grpc.Services;
@@ -13,6 +14,7 @@ public class AlbumInventoryService : global::VibeHive.Inventory.AlbumInventory.A
     private static readonly object syncRoot = new();
     private static int nextId = 1;
 
+    [Authorize(Roles = "Admin")]
     public override Task<Album> AddAlbum(Album request, ServerCallContext context)
     {
         ValidateDetails(request);
@@ -33,6 +35,7 @@ public class AlbumInventoryService : global::VibeHive.Inventory.AlbumInventory.A
         }
     }
 
+    [Authorize(Roles = "Admin")]
     public override Task<Album> UpdateAlbum(Album request, ServerCallContext context)
     {
         ValidateDetails(request);
@@ -47,6 +50,7 @@ public class AlbumInventoryService : global::VibeHive.Inventory.AlbumInventory.A
         }
     }
 
+    [Authorize(Roles = "Admin")]
     public override Task<Empty> DeleteAlbum(AlbumRequest request, ServerCallContext context)
     {
         lock (syncRoot)
@@ -79,6 +83,7 @@ public class AlbumInventoryService : global::VibeHive.Inventory.AlbumInventory.A
         }
     }
 
+    [Authorize]
     public override Task<Album> ReserveAlbum(ReservationRequest request, ServerCallContext context)
     {
         ValidateReservation(request);
@@ -98,6 +103,7 @@ public class AlbumInventoryService : global::VibeHive.Inventory.AlbumInventory.A
         }
     }
 
+    [Authorize]
     public override Task<Album> ReleaseAlbum(ReservationRequest request, ServerCallContext context)
     {
         ValidateReservation(request);
